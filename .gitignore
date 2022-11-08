@@ -38,3 +38,4 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 /Application_Mail_Java/nbproject/private/
+/Application_Mail_Java/build/
