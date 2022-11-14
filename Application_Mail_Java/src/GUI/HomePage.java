@@ -5,19 +5,65 @@
  */
 package GUI;
 
-import java.awt.Dialog;
+import JMailLib.MailClient;
+import JMailLib.UtilityLib;
+import java.util.Iterator;
+import java.util.Vector;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.NoSuchProviderException;
+import JMailLib.*;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
  * @author student
  */
 public class HomePage extends javax.swing.JFrame {
-
+    private MailClient mail;
+    private Message[] msg;
+    private ThreadMail clock;
+    
     /**
      * Creates new form GUI
      */
-    public HomePage() {
+    public HomePage(MailClient m) throws MessagingException {
         initComponents();
+        mail = m;        
+        clock = new ThreadMail(this, 5);
+    }
+    
+    public void StartThreadRefresh(){
+        clock.start();
+    }
+    
+    public void onRefreshMail(){        
+        try {
+            Vector<String> test = new Vector<String>();
+            
+            msg = mail.GetListMail();
+            System.out.println("Refresh Mails: " + msg.length);
+            
+            Iterator i= UtilityLib.GetHeadSender(msg).iterator();
+                        
+            DefaultTableModel dataModel = (DefaultTableModel) Mail_Selector.getModel();
+            dataModel.setRowCount(0);
+            
+            while(i.hasNext()){
+                Vector rowData =(Vector) i.next();
+                dataModel.addRow(rowData);
+            }
+            
+            Mail_Selector.setModel(dataModel);
+        } catch (MessagingException ex) {
+            System.out.println(ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Erreur: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
     }
 
     /**
@@ -42,7 +88,7 @@ public class HomePage extends javax.swing.JFrame {
 
         Mail_Selector.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {"Machin@gmail.com", null}
+                {"Waiting...", "Waiting..."}
             },
             new String [] {
                 "Expéditeur", "Objet"
@@ -56,6 +102,7 @@ public class HomePage extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
+        Mail_Selector.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPane1.setViewportView(Mail_Selector);
         if (Mail_Selector.getColumnModel().getColumnCount() > 0) {
             Mail_Selector.getColumnModel().getColumn(0).setMinWidth(200);
@@ -82,8 +129,13 @@ public class HomePage extends javax.swing.JFrame {
         });
 
         Respond_Mail.setText("Répondre");
+        Respond_Mail.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                Respond_MailActionPerformed(evt);
+            }
+        });
 
-        Quit.setText("Quitter");
+        Quit.setText("Logout");
         Quit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 QuitActionPerformed(evt);
@@ -132,54 +184,52 @@ public class HomePage extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void QuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_QuitActionPerformed
-        System.exit(0);
+        try {
+            mail.Close();
+        } catch (MessagingException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        login n = new login();
+        n.setVisible(true);
+        
+        this.dispose();
     }//GEN-LAST:event_QuitActionPerformed
 
     private void Open_MailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Open_MailActionPerformed
-        OpenMail window = new OpenMail();
+        int index;
+        if((index = Mail_Selector.getSelectedRow()) == -1){
+            JOptionPane.showMessageDialog(this, "Erreur: " + "Vous n'avez pas sélectionné de mail a ouvrir", "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        OpenMail window = null;
+        
+        try {
+            if(msg == null){ return; }
+            window = new OpenMail(msg[index]);
+        } catch (MessagingException | IOException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        }
+        
         window.setVisible(true);
     }//GEN-LAST:event_Open_MailActionPerformed
 
     private void New_MailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_New_MailActionPerformed
-        NewMail window = new NewMail();
+        NewMail window;
+        try {
+            window = new NewMail(mail);
+        } catch (MessagingException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         window.setVisible(true);
     }//GEN-LAST:event_New_MailActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(HomePage.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new HomePage().setVisible(true);
-            }
-        });
-    }
+    private void Respond_MailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_Respond_MailActionPerformed
+        //ToDo
+    }//GEN-LAST:event_Respond_MailActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable Mail_Selector;

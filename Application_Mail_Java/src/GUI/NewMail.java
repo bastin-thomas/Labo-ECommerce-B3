@@ -5,17 +5,53 @@
  */
 package GUI;
 
+import JMailLib.MailClient;
+import JMailLib.UtilityLib;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.mail.Address;
+import javax.mail.MessagingException;
+import javax.mail.Multipart;
+import javax.mail.NoSuchProviderException;
+import javax.mail.Transport;
+import javax.mail.internet.AddressException;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileSystemView;
+
 /**
  *
  * @author student
  */
 public class NewMail extends javax.swing.JFrame {
-
+    private MailClient client;
+    private Vector<String> FileList;
+    private MimeMessage msg;
+    private Multipart Multip;
+    
     /**
      * Creates new form OpenMail
      */
-    public NewMail() {
+    public NewMail(MailClient cl) throws MessagingException {
         initComponents();
+        
+        client = cl;
+        msg = new MimeMessage(client.getSess());
+        FileList = new Vector<String>();
+        Multip = new MimeMultipart();
+        msg.setContent(Multip);
+        
+        From.setText(client.getIdent());
     }
 
     /**
@@ -38,18 +74,21 @@ public class NewMail extends javax.swing.JFrame {
         To = new javax.swing.JTextField();
         Cc = new javax.swing.JTextField();
         Subject = new javax.swing.JTextField();
+        jComboBox1 = new javax.swing.JComboBox<>();
+        Add = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("New Email");
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel1.setText("From :");
-        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, -1, -1));
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 15, -1, 20));
 
         jLabel2.setText("To :");
-        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 60, -1, -1));
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 50, 30, 20));
 
         jLabel3.setText("Cc :");
-        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 90, -1, -1));
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(90, 85, -1, 20));
 
         jScrollPane2.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         jScrollPane2.setViewportView(Message1);
@@ -62,7 +101,7 @@ public class NewMail extends javax.swing.JFrame {
                 SendActionPerformed(evt);
             }
         });
-        getContentPane().add(Send, new org.netbeans.lib.awtextra.AbsoluteConstraints(359, 530, 161, 41));
+        getContentPane().add(Send, new org.netbeans.lib.awtextra.AbsoluteConstraints(330, 590, 161, 41));
 
         KO.setText("Annuler");
         KO.addActionListener(new java.awt.event.ActionListener() {
@@ -70,11 +109,25 @@ public class NewMail extends javax.swing.JFrame {
                 KOActionPerformed(evt);
             }
         });
-        getContentPane().add(KO, new org.netbeans.lib.awtextra.AbsoluteConstraints(85, 530, 148, 41));
+        getContentPane().add(KO, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 590, 148, 41));
+
+        From.setEditable(false);
+        From.setFocusable(false);
         getContentPane().add(From, new org.netbeans.lib.awtextra.AbsoluteConstraints(121, 12, 470, 29));
         getContentPane().add(To, new org.netbeans.lib.awtextra.AbsoluteConstraints(121, 47, 470, 29));
         getContentPane().add(Cc, new org.netbeans.lib.awtextra.AbsoluteConstraints(121, 82, 470, 29));
         getContentPane().add(Subject, new org.netbeans.lib.awtextra.AbsoluteConstraints(12, 136, 579, 35));
+
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "No Attachement" }));
+        getContentPane().add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 530, 450, 30));
+
+        Add.setText("Add File");
+        Add.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddActionPerformed(evt);
+            }
+        });
+        getContentPane().add(Add, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 530, 100, 30));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -84,11 +137,122 @@ public class NewMail extends javax.swing.JFrame {
     }//GEN-LAST:event_KOActionPerformed
 
     private void SendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SendActionPerformed
-        // TODO add your handling code here:
+        // Create And Send The Mail
+        Address[] ToAddresses = null;
+        Address[] CcAddresses = null;
+        
+        //Check the email list To:
+        //Regex: https://stackoverflow.com/questions/4412725/how-to-match-a-comma-separated-list-of-emails-with-regex
+        Pattern p = Pattern.compile("(^([a-z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*)(([, ]+[a-z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-z0-9]([a-z0-9-]*[a-z0-9])\\.([a-z0-9]([a-z0-9-]*[a-z0-9]))*)?)*$)");
+        Matcher mTo = p.matcher(To.getText());
+        Matcher mCc = p.matcher(Cc.getText());
+        
+        System.out.println("Pattern: " + mTo.pattern());
+        
+        if(!mTo.find() && (!To.getText().equals(""))){
+            //Erreur d'écriture de liste de Mail
+            JOptionPane.showMessageDialog(this, "Erreur de syntaxe To: " + "Votre liste d'email doit être composé de Virgule\nentre chaque mail et composé de format d'email valide.", "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //Check the email list To:
+        //Regex: https://stackoverflow.com/questions/4412725/how-to-match-a-comma-separated-list-of-emails-with-regex
+        if(!mCc.find() && (!Cc.getText().equals(""))){
+            //Erreur d'écriture de liste de Mail
+            JOptionPane.showMessageDialog(this, "Erreur de syntaxe Cc: " + "Votre liste d'email doit être composé de Virgule\nentre chaque mail et composé de format d'email valide.", "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //Construct Address To List:
+        Vector<String> ToVec = new Vector<String>();
+        Collections.addAll(ToVec, To.getText().split("\\s*,[,\\s]*"));
+        
+        try {
+            ToAddresses = UtilityLib.convertAddr(ToVec);
+        } catch (AddressException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur " + ex.getRef() + ": " + ex.getMessage() , "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+
+        //Construct Address Cc List:
+        Vector<String> CcVec = new Vector<String>();
+        Collections.addAll(CcVec, Cc.getText().split("\\s*,[,\\s]*"));
+        try {
+            CcAddresses = UtilityLib.convertAddr(CcVec);
+        } catch (AddressException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur " + ex.getRef() + ": " + ex.getMessage() , "ERROR", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        if(jComboBox1.getSelectedItem().equals("No Attachement") && jComboBox1.getModel().getSize() == 1){
+            try {
+                //SimpleMail
+                UtilityLib.createMessageSimple(msg, ToAddresses, CcAddresses, Subject.getText(), Message1.getText());
+            } catch (MessagingException ex) {
+                JOptionPane.showMessageDialog(this, "Erreur Création Simple Mail: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            System.out.println("SimpleMail envoyé");
+        }
+        else{            
+            try {
+                //ComplexMail    
+                UtilityLib.createMessageMultiPart(msg, Multip, ToAddresses, CcAddresses, Subject.getText(), Message1.getText());
+            } catch (MessagingException ex) {
+                JOptionPane.showMessageDialog(this, "Erreur Création Complex Mail: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            System.out.println("ComplexMail envoyé");
+        }
+        
+        
+        try {
+            Transport.send(msg);
+        } catch (NoSuchProviderException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur d'envoi: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        } catch (MessagingException ex) {
+            JOptionPane.showMessageDialog(this, "Erreur d'envoi: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        this.dispose();
     }//GEN-LAST:event_SendActionPerformed
+
+    private void AddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddActionPerformed
+        //Add New File        
+        JFileChooser fc = new JFileChooser((FileSystemView.getFileSystemView().getHomeDirectory() + "/Bureau/"));
+        fc.setMultiSelectionEnabled(false);
+        fc.showOpenDialog(this);
+        
+        Add.setEnabled(false);
+        if(JFileChooser.APPROVE_OPTION == 0){
+            //File Path to Save
+            String Path = fc.getSelectedFile().getAbsolutePath();
+            
+            try {
+                UtilityLib.setFilePart(Multip, Path, FileList);
+            } catch (IOException | MessagingException ex) {
+                JOptionPane.showMessageDialog(this, "Erreur: " + ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            DefaultComboBoxModel model = (DefaultComboBoxModel) jComboBox1.getModel();
+            model.removeAllElements();
+            
+            Iterator i = FileList.iterator();
+            while(i.hasNext()){
+                model.addElement((String) i.next());
+            }
+            
+            jComboBox1.setModel(model);
+            System.out.println(Multip.toString());
+        }
+        Add.setEnabled(true);
+    }//GEN-LAST:event_AddActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Add;
     private javax.swing.JTextField Cc;
     private javax.swing.JTextField From;
     private javax.swing.JButton KO;
@@ -96,6 +260,7 @@ public class NewMail extends javax.swing.JFrame {
     private javax.swing.JButton Send;
     private javax.swing.JTextField Subject;
     private javax.swing.JTextField To;
+    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

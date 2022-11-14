@@ -39,3 +39,4 @@ vignettes/*.pdf
 .Renviron
 /Application_Mail_Java/nbproject/private/
 /Application_Mail_Java/build/
+/Application_Mail_Java/dist/
