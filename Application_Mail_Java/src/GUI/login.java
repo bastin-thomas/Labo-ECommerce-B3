@@ -41,6 +41,7 @@ public class login extends javax.swing.JFrame {
         jComboBox1 = new javax.swing.JComboBox<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Login");
 
         login.setText("riverside.redmrp@gmail.com");
 
