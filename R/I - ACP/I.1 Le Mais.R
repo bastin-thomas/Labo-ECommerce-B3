@@ -18,7 +18,7 @@ cls <- function() printf("\014")
 cls()
 
 # Set WorkingDirectory
-setwd("E:\\HEPL\\R\\Labo-R-B3\\ACP\\Files")
+setwd("E:\\HEPL\\R\\Labo-ECommerce-B3\\R\\Files")
 
 library(FactoMineR)
 #FIN HEADER
@@ -39,11 +39,9 @@ etude_agro <- etude_agro[-c(1), ]
 summary(etude_agro)
 str(etude_agro)
 
-
-x11()
 ACP <- PCA(etude_agro, scale.unit = TRUE, quali.sup = c(5:10,12), quanti.sup = c(11))
 
-
+summary(ACP)
 
 #G1 La Masse Total du Plant et la Hauteur du Plant sont fortement corélée entre elles.
 
@@ -53,6 +51,6 @@ ACP <- PCA(etude_agro, scale.unit = TRUE, quali.sup = c(5:10,12), quanti.sup = c
 
 #Toutes les variables sont corrélées de même manière avec F1 et F2
 
-# F1(x): 
+# F1(x): Jaune
 
-# F2(y): 
+# F2(y): Rouge
