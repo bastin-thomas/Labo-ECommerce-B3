@@ -54,14 +54,17 @@ layout.show(max(zones))
 # Relation Masse et Enracinement
 boxplot(Masse~Enracinement)
 
-
+# Repartition de l'Orentation des Parcelles
 Nord  <- nrow(subset(etude_agro, subset = Parcelle == 'Nord', select = Parcelle))
 Sud   <- nrow(subset(etude_agro, subset = Parcelle == 'Sud', select = Parcelle))
 Est   <- nrow(subset(etude_agro, subset = Parcelle == 'Est', select = Parcelle))
 Ouest <- nrow(subset(etude_agro, subset = Parcelle == 'Ouest', select = Parcelle))
 pie(c(Nord, Sud, Est, Ouest), labels = c("Nord", "Sud", "Est", "Ouest"), init.angle = 90, clockwise = TRUE)
 
-
+# Relation entre Nb.grains et Masse.grains
 plot(Masse.grains, Nb.grains)
 
+
+# Relation entre Couleur et Enracinement
+plot(Couleur~Enracinement, xlab = 'Couleur', ylab = 'Enracinement', col = c("Red", "Orange", "Yellow"))
 

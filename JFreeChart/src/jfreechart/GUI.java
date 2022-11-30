@@ -9,7 +9,10 @@ import com.opencsv.CSVIterator;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvValidationException;
+import java.awt.Color;
 import java.awt.Font;
+import java.awt.Shape;
+import java.awt.geom.Ellipse2D;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale.Category;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -31,7 +35,9 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.BoxAndWhiskerToolTipGenerator;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BoxAndWhiskerRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
@@ -40,6 +46,7 @@ import org.jfree.data.statistics.DefaultBoxAndWhiskerCategoryDataset;
 import org.jfree.data.xy.DefaultXYDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.util.ShapeUtilities;
 
 /**
  *
@@ -106,7 +113,7 @@ public final class GUI extends javax.swing.JFrame {
     // 1. la relation entre Masse et Enracinement;
     public void showMasseToEnracinement(){
         DefaultBoxAndWhiskerCategoryDataset dataset = getMasseToEnracinement();        
-        JFreeChart chart = ChartFactory.createBoxAndWhiskerChart("Relation Masse Enracinement", "", "Masse", dataset, true);
+        JFreeChart chart = ChartFactory.createBoxAndWhiskerChart("Relation entre la Masse et l'Enracinement", "Enracinement", "Masse", dataset, true);
         ChartPanel chartPanel = new ChartPanel(chart);
         jInternalFrame1.setContentPane(chartPanel);
     }
@@ -137,8 +144,13 @@ public final class GUI extends javax.swing.JFrame {
     //      XYSeries
     public void showNbgrainsMassegrains(){
         XYDataset dataset = getNbgrainsMassegrains();
-        JFreeChart chart = ChartFactory.createScatterPlot("La relation entre Nb.grains et Masse.grains", "Nombre de Grains", 
+        JFreeChart chart = ChartFactory.createScatterPlot("Relation entre le Nombre de grains et la Masse de grains", "Nombre de Grains", 
                                                           "Masse de Grains", dataset, PlotOrientation.HORIZONTAL, true, true, true);
+        XYPlot xyPlot = (XYPlot) chart.getPlot();
+        XYItemRenderer renderer = xyPlot.getRenderer();
+        renderer.setSeriesShape(0,  new Ellipse2D.Double(-3, -3, 6, 6));
+        renderer.setSeriesPaint(0, Color.BLACK);
+        
         ChartPanel chartPanel = new ChartPanel(chart);
         jInternalFrame2.setContentPane(chartPanel);
     }
@@ -197,7 +209,14 @@ public final class GUI extends javax.swing.JFrame {
     //      barChart
     public void showRelationCouleurEnracinement(){
         CategoryDataset dataset = getRelationCouleurEnracinement();
-        JFreeChart chart = ChartFactory.createStackedBarChart("Relation entre Couleur et Enracinement", "Couleur", "Quantite", dataset, PlotOrientation.VERTICAL, true, true, true);
+        JFreeChart chart = ChartFactory.createStackedBarChart("Relation entre Couleur et Enracinement", "Couleur", "Quantite",
+                dataset, PlotOrientation.VERTICAL, true, true, true);
+        
+        CategoryPlot plot = chart.getCategoryPlot();
+        plot.getRenderer().setSeriesPaint(2, Color.YELLOW);
+        plot.getRenderer().setSeriesPaint(1, Color.ORANGE);
+        plot.getRenderer().setSeriesPaint(0, Color.RED);
+        
         ChartPanel chartPanel = new ChartPanel(chart);
         jInternalFrame4.setContentPane(chartPanel);
     }
@@ -257,21 +276,22 @@ public final class GUI extends javax.swing.JFrame {
     }
     
     private void initDataset(DefaultCategoryDataset dataset){
-        dataset.addValue(0, "Jaune",        "Faible"); 
-        dataset.addValue(0, "Jaune.Rouge",  "Faible");
         dataset.addValue(0, "Rouge",        "Faible");
+        dataset.addValue(0, "Jaune.Rouge",  "Faible");
+        dataset.addValue(0, "Jaune",        "Faible");
         
-        dataset.addValue(0, "Jaune",        "Moyen");
-        dataset.addValue(0, "Jaune.Rouge",  "Moyen");
         dataset.addValue(0, "Rouge",        "Moyen");
+        dataset.addValue(0, "Jaune.Rouge",  "Moyen");
+        dataset.addValue(0, "Jaune",        "Moyen");
         
-        dataset.addValue(0, "Jaune",        "Fort");
-        dataset.addValue(0, "Jaune.Rouge",  "Fort");
         dataset.addValue(0, "Rouge",        "Fort");
+        dataset.addValue(0, "Jaune.Rouge",  "Fort");
+        dataset.addValue(0, "Jaune",        "Fort");
         
-        dataset.addValue(0, "Jaune",        "TresFort");
-        dataset.addValue(0, "Jaune.Rouge",  "TresFort");
+        
         dataset.addValue(0, "Rouge",        "TresFort");
+        dataset.addValue(0, "Jaune.Rouge",  "TresFort");
+        dataset.addValue(0, "Jaune",        "TresFort");
     }
     
     private void convertToPercent(DefaultCategoryDataset dataset){
